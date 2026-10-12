@@ -22,7 +22,19 @@
       "LONGHORNS"
     ]
   },
-  "10U": null,
+  "10U": {
+    "approved": true,
+    "order": [
+      "JAYHAWKS",
+      "COUGARS",
+      "GATORS",
+      "LONGHORNS",
+      "BEARKATS",
+      "RED RAIDERS",
+      "SOONERS",
+      "BRUINS"
+    ]
+  },
   "12U": {
     "approved": true,
     "order": [
