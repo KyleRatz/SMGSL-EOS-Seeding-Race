@@ -23,6 +23,18 @@
     ]
   },
   "10U": null,
-  "12U": null,
+  "12U": {
+    "approved": true,
+    "order": [
+      "COWGIRLS",
+      "AGGIES",
+      "LONGHORNS",
+      "BRUINS",
+      "JAYHAWKS",
+      "TIGERS",
+      "LADY VOLS",
+      "GATORS"
+    ]
+  },
   "MX": null
 }
