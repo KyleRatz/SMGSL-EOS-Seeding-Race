@@ -36,5 +36,15 @@
       "GATORS"
     ]
   },
-  "MX": null
+  "MX": {
+    "approved": true,
+    "order": [
+      "BEARKATS",
+      "AGGIES",
+      "LONGHORNS",
+      "TIGERS",
+      "JAYHAWKS",
+      "COUGARS"
+    ]
+  }
 }
