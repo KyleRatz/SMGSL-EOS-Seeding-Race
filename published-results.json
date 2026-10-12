@@ -1,5 +1,14 @@
 {
-  "6U": null,
+  "6U": {
+    "approved": true,
+    "order": [
+      "AGGIES",
+      "TIGERS",
+      "DUCKS",
+      "GATORS",
+      "JAYHAWKS"
+    ]
+  },
   "8U": null,
   "10U": null,
   "12U": null,
