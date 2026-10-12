@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMGSL EOS Seeding Race</title><style>
+:root{font-family:system-ui,Arial;color:#eaf2ff;background:#0b1930}*{box-sizing:border-box}body{margin:0}
+header{background:#132f55;padding:22px max(16px,calc((100vw - 1100px)/2));border-bottom:4px solid #e9b846}
+main{max-width:1100px;margin:24px auto;padding:0 15px}h1{margin:0;font-size:clamp(25px,4vw,40px)}h2{margin:0 0 12px}
+.muted{color:#b8c9df}.panel{background:#162c49;border:1px solid #355172;border-radius:15px;padding:18px;margin:15px 0}
+button,select,input,textarea{font:inherit;border-radius:9px;padding:11px}button{cursor:pointer;background:#f0bf4d;border:0;color:#14233b;font-weight:800;margin:4px}button.secondary{background:#dce7f6}button:disabled{opacity:.45;cursor:not-allowed}
+select,textarea,input{background:#e9f1fa;color:#12233c;border:0}textarea{width:100%;min-height:120px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.track{position:relative;background:repeating-linear-gradient(180deg,#a9403c 0px,#a9403c 61px,#f9e8d7 62px,#a9403c 65px);border-radius:10px;overflow:hidden;border:4px solid #e4b14c}
+.lane{height:65px;position:relative;display:flex;align-items:center;padding-left:12px;color:white;font-weight:900;text-shadow:1px 2px 3px #331}
+.runner{position:absolute;left:16%;top:7px;font-size:34px;will-change:left;transform:translateX(-50%) scaleX(-1);z-index:2}
+.team{position:absolute;left:55px;top:24px;font-size:13px;background:#10243acc;padding:3px 8px;border-radius:4px;white-space:nowrap}
+.finish{position:absolute;left:89%;top:0;bottom:0;width:15px;background:repeating-conic-gradient(#fff 0% 25%,#111 0% 50%) 0 0/15px 16px;z-index:1}
+.place{position:absolute;right:1%;font-size:21px;background:#10243a;padding:5px;border-radius:5px;display:none}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.seed{background:#243f60;padding:12px;border-radius:8px}
+#viewer{display:none}#status{font-weight:700;color:#f3c960}.notice{font-size:13px;color:#bfd1e5}a{color:#f7d475}
+</style></head><body>
+<header><h1>🏁 SMGSL FALL EOS • SEEDING RACE</h1><div class="muted">DEMO ONLY — not an authenticated official seeding system</div><div class="muted">Random draw • 15-second animated reveal • SMGSL recreational teams only</div></header>
+<main><div id="admin"><section class="panel"><h2>Scheduler dashboard</h2><div class="controls"><label>Division <select id="division"></select></label><button id="draw">🎲 Random Draw</button><button id="approve">✓ Approve & Lock</button><button class="secondary" id="reset">Reset Division</button></div>
+<p id="status">Choose a division and draw.</p><label>Participating teams (one per line; edit before drawing)<textarea id="roster"></textarea></label>
+<p class="notice">Approval is stored in this browser. This static prototype does not verify scheduler identity or enforce server-side approval. Use only approved links for public distribution.</p>
+<div class="controls"><button id="preview">▶ Preview 15-second race</button><button id="copy" disabled>Copy public race link</button><button id="email" disabled>✉ Prepare Outlook email</button></div></section></div>
+<section class="panel" id="racePanel"><h2 id="raceTitle">Race preview</h2><p class="muted" id="intro">Starting lanes are mixed independently of the approved random seed order. Each finishing position is revealed at the line.</p><div id="track" class="track"></div><div class="controls"><button id="play">▶ Play 15-second race</button><button id="replay" class="secondary">↻ Replay</button></div><h2 style="margin-top:20px">🏆 Final seeding</h2><div id="results" class="results"></div></section>
+<p class="notice">For public use, deploy this page to HTTPS hosting. The public link encodes the approved team order, so each viewer sees identical results. The random draw does not use game standings.</p></main>
+<script>
+const BASE={"6U": ["AGGIES", "DUCKS", "GATORS", "JAYHAWKS", "TIGERS"], "8U": ["AGGIES", "COUGARS", "COWGIRLS", "DUCKS", "JAYHAWKS", "LONGHORNS", "NITTANY LIONS", "RED RAIDERS"], "10U": ["BEARKATS", "BRUINS", "COUGARS", "GATORS", "JAYHAWKS", "LONGHORNS", "RED RAIDERS", "SOONERS"], "12U": ["AGGIES", "BRUINS", "COWGIRLS", "GATORS", "JAYHAWKS", "LADY VOLS", "LONGHORNS", "TIGERS"], "MX": ["AGGIES", "BEARKATS", "COUGARS", "JAYHAWKS", "LONGHORNS", "TIGERS"]}; const $=id=>document.getElementById(id);
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let state=JSON.parse(localStorage.getItem('smgsl_eos_state')||'{}'), div='6U', race=[], approved=false, timers=[];
+function save(){localStorage.setItem('smgsl_eos_state',JSON.stringify(state))}
+function list(){return ($('roster').value||'').split('\n').map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i)}
+function load(){let x=state[div]||{teams:BASE[div],order:[],approved:false};$('roster').value=x.teams.join('\n');race=x.order.slice();approved=x.approved;refresh()}
+function refresh(){let x=state[div];$('status').textContent=approved?'🔒 APPROVED — public race link ready':race.length?'Draft random draw — review before approval':'Not drawn';$('copy').disabled=$('email').disabled=!approved;$('draw').disabled=approved;$('approve').disabled=approved||!race.length;$('roster').disabled=approved;$('raceTitle').textContent=div+' • Race to the #1 Seed';render(false)}
+function persist(){state[div]={teams:list(),order:race.slice(),approved};save();refresh()}
+function randomDraw(){let a=list();if(a.length<2){alert('Enter at least two teams');return}for(let i=a.length-1;i>0;i--){let u=new Uint32Array(1);crypto.getRandomValues(u);let j=u[0]%(i+1);[a[i],a[j]]=[a[j],a[i]]}race=a;approved=false;persist()}
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+// Deterministic lane shuffle: independent of finishing seed, stable for all viewers.
+function laneHash(name){let h=2166136261;for(const ch of (div+'|'+name)){h=Math.imul(h^ch.charCodeAt(0),16777619)}return h>>>0}
+function laneOrder(a){return a.slice().sort((x,y)=>laneHash(x)-laneHash(y)||x.localeCompare(y))}
+function render(show){clearTimers();let seeded=race.length?race:list(), lanes=laneOrder(seeded);$('track').innerHTML='';$('results').innerHTML='';lanes.forEach(name=>{let lane=document.createElement('div');lane.className='lane';lane.dataset.team=name;lane.innerHTML='<span class="team">'+escapeHTML(name)+'</span><span class="runner" aria-label="girl runner facing the finish line">🏃‍♀️</span><span class="place"></span>';$('track').appendChild(lane)});let finish=document.createElement('div');finish.className='finish';$('track').appendChild(finish);if(show)animate(seeded)}
+function animate(seeded){clearTimers();$('play').disabled=true;$('results').innerHTML='';const lanes=[...document.querySelectorAll('.lane')],duration=15000;
+const rank=new Map(seeded.map((name,i)=>[name,i]));
+lanes.forEach(lane=>{let name=lane.dataset.team,i=rank.get(name),runner=lane.querySelector('.runner'),place=lane.querySelector('.place');let finishTime=7800+i*650;
+runner.style.transition='none';runner.style.left='16%';place.style.display='none';void runner.offsetWidth;
+requestAnimationFrame(()=>requestAnimationFrame(()=>{runner.style.transition=`left ${finishTime}ms cubic-bezier(.25,.1,.55,1)`;runner.style.left='90%'}));
+timers.push(setTimeout(()=>{place.textContent='#'+(i+1);place.style.display='block';let item=document.createElement('div');item.className='seed';item.textContent='#'+(i+1)+'  '+name;$('results').appendChild(item)},finishTime));
+});timers.push(setTimeout(()=>$('play').disabled=false,duration));}
+function encoded(){return btoa(unescape(encodeURIComponent(JSON.stringify({division:div,order:race,version:1})))).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'')}
+function publicURL(){return location.href.split('#')[0]+'#race='+encoded()}
+function sendEmail(){let url=publicURL();if(location.protocol==='file:'){alert('Deploy to an HTTPS website before emailing public links. Local file links will not work for families.');return}
+let subject='SMGSL Fall EOS '+div+' — Watch the Seeding Race!';
+let body='Hello SMGSL families and coaches,\\n\\nThe '+div+' Fall EOS random seeding draw has been approved!\\n\\n🏁 WATCH THE 15-SECOND SEEDING RACE:\\n'+url+'\\n\\nPress Play to watch the teams race and reveal the official seed order at the finish line.\\n\\nThank you,\\nSMGSL';
+location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body.replaceAll('\\n','\n'))}
+function init(){for(let k of Object.keys(BASE)){$('division').add(new Option(k,k))} $('division').onchange=()=>{div=$('division').value;load()};
+$('draw').onclick=randomDraw;$('approve').onclick=()=>{if(!confirm('Approve and lock '+div+' random seeding?'))return;approved=true;persist()};
+$('reset').onclick=()=>{if(!confirm('Clear '+div+' results and approval?'))return;approved=false;race=[];persist()};
+$('roster').onchange=()=>{race=[];approved=false;persist()};
+$('preview').onclick=()=>render(true);$('play').onclick=()=>animate(race.length?race:list());$('replay').onclick=()=>render(true);
+$('copy').onclick=async()=>{if(location.protocol==='file:'){alert('A hosted HTTPS URL is required. Deploy first.');return}try{await navigator.clipboard.writeText(publicURL());alert('Public race link copied')}catch{prompt('Copy link:',publicURL())}};
+$('email').onclick=sendEmail;
+if(location.hash.startsWith('#race=')){try{let raw=location.hash.slice(6).replaceAll('-','+').replaceAll('_','/');let data=JSON.parse(decodeURIComponent(escape(atob(raw))));if(!BASE[data.division]||!Array.isArray(data.order)||data.order.length>50||!data.order.every(x=>typeof x==='string'&&x.length<100))throw Error('Invalid data');$('admin').style.display='none';div=data.division;race=data.order;approved=true;$('raceTitle').textContent=div+' • Official Seeding Race';$('intro').textContent='Press Play to watch the 15-second random seeding reveal!';render(false)}catch(e){alert('Invalid race link');load()}}else load()}
+init();
+</script></body></html>
