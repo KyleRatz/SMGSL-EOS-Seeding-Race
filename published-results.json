@@ -9,7 +9,19 @@
       "JAYHAWKS"
     ]
   },
-  "8U": null,
+  "8U": {
+    "approved": true,
+    "order": [
+      "DUCKS",
+      "JAYHAWKS",
+      "COUGARS",
+      "NITTANY LIONS",
+      "COWGIRLS",
+      "RED RAIDERS",
+      "AGGIES",
+      "LONGHORNS"
+    ]
+  },
   "10U": null,
   "12U": null,
   "MX": null
